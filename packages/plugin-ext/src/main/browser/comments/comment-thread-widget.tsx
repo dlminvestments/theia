@@ -14,7 +14,12 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 import { MonacoEditorZoneWidget } from '@theia/monaco/lib/browser/monaco-editor-zone-widget';
-import { Comment, CommentThread, CommentThreadCollapsibleState } from '../../../common/plugin-api-rpc-model';
+import {
+    Comment,
+    CommentMode,
+    CommentThread,
+    CommentThreadCollapsibleState
+} from '../../../common/plugin-api-rpc-model';
 import { CommentGlyphWidget } from './comment-glyph-widget';
 import { BaseWidget, DISABLED_CLASS } from '@theia/core/lib/browser';
 import * as ReactDOM from 'react-dom';
@@ -30,7 +35,9 @@ import {
 } from '@theia/core/lib/common';
 import { CommentsContextKeyService } from './comments-context-key-service';
 
-export const COMMENT_INLINE_MENU: MenuPath = ['comment-inline-menu'];
+export const COMMENT_THREAD_CONTEXT: MenuPath = ['comment_thread-context-menu'];
+export const COMMENT_CONTEXT: MenuPath = ['comment-context-menu'];
+export const COMMENT_TITLE: MenuPath = ['comment-title-menu'];
 
 export class CommentThreadWidget extends BaseWidget {
 
@@ -54,11 +61,7 @@ export class CommentThreadWidget extends BaseWidget {
     //     this.render();
     // }
 
-    /**
-     * Don't modify DOM use React! only exposed for `focusInput`
-     * Use `this.scmService.selectedRepository?.input.value` as a single source of truth!
-     */
-    protected readonly inputRef = React.createRef<HTMLTextAreaElement>();
+    private readonly inputRef = React.createRef<HTMLTextAreaElement>();
 
     constructor(
         editor: monaco.editor.IStandaloneCodeEditor,
@@ -88,7 +91,7 @@ export class CommentThreadWidget extends BaseWidget {
         this.contextKeyService.commentIsEmpty.set(true);
         this.toDispose.push(this.zoneWidget.editor.onMouseDown(e => this.onEditorMouseDown(e)));
         this.toDispose.push(this.contextKeyService.onDidChange(() => this.update()));
-        this.menu = this.menus.getMenu(COMMENT_INLINE_MENU);
+        this.menu = this.menus.getMenu(COMMENT_THREAD_CONTEXT);
         this.menu.children.map(node => node instanceof ActionMenuNode && node.action.when).forEach(exp => {
             if (typeof exp === 'string') {
                 this.contextKeyService.setExpression(exp);
@@ -140,7 +143,16 @@ export class CommentThreadWidget extends BaseWidget {
             </div>
             <div className={'body'}>
                 <div className={'comments-container'} role={'presentation'} tabIndex={0}>
-                    {this.commentThread.comments?.map((comment, index) => <ReviewComment key={index} comment={comment}/>)}
+                    {this.commentThread.comments?.map((comment, index) => <ReviewComment
+                        key={index}
+                        contextKeyService={this.contextKeyService}
+                        menus={this.menus}
+                        comment={comment}
+                        commands={this.commands}
+                        commentThread={this._commentThread}
+                        getInput={getInput}
+                        clearInput={clearInput}
+                    />)}
                 </div>
                 <div className={'comment-form'}>
                     <div className={'theia-comments-input-message-container'}>
@@ -316,14 +328,56 @@ export class CommentThreadWidget extends BaseWidget {
 
 namespace ReviewComment {
     export interface Props  {
+        menus: MenuModelRegistry,
         comment: Comment;
+        commentThread: CommentThread;
+        contextKeyService: CommentsContextKeyService;
+        getInput: () => string;
+        clearInput: () => void;
+        commands: CommandRegistry;
+    }
+
+    export interface State {
+        hover: boolean
     }
 }
 
-export class ReviewComment extends React.Component<ReviewComment.Props> {
+export class ReviewComment<P extends ReviewComment.Props = ReviewComment.Props> extends React.Component<P, ReviewComment.State> {
+
+    constructor(props: P) {
+        super(props);
+        this.state = {
+            hover: false
+        };
+
+        const setState = this.setState.bind(this);
+        this.setState = newState => {
+            setState(newState);
+        };
+    }
+
+    protected detectHover = (element: HTMLElement | null) => {
+        if (element) {
+            window.requestAnimationFrame(() => {
+                const hover = element.matches(':hover');
+                this.setState({ hover });
+            });
+        }
+    };
+
+    protected showHover = () => this.setState({ hover: true });
+    protected hideHover = () => this.setState({ hover: false });
+
     render(): React.ReactNode {
-        const comment: Comment = this.props.comment;
-        return <div className={'review-comment'} tabIndex={-1} aria-label={`${comment.userName}, ${comment.body.value}`}>
+        const { comment, contextKeyService, menus, commands, commentThread, getInput, clearInput } = this.props;
+        const commentUniqueId = comment.uniqueIdInThread;
+        const { hover } = this.state;
+        return <div className={'review-comment'}
+                    tabIndex={-1}
+                    aria-label={`${comment.userName}, ${comment.body.value}`}
+                    ref={this.detectHover}
+                    onMouseEnter={this.showHover}
+                    onMouseLeave={this.hideHover}>
             <div className={'avatar-container'}>
                 <img className={'avatar'} src={comment.userIconPath}/>
             </div>
@@ -331,13 +385,98 @@ export class ReviewComment extends React.Component<ReviewComment.Props> {
                 <div className={'comment-title monaco-mouse-cursor-text'}>
                     <strong className={'author'}>{comment.userName}</strong>
                     <span className={'isPending'}>{comment.label}</span>
-                </div>
-                <div className={'comment-body monaco-mouse-cursor-text'}>
-                    <div>
-                        <p>{comment.body.value}</p>
+                    <div className={'theia-comments-inline-actions-container'}>
+                        <div className={'theia-comments-inline-actions'} role={'toolbar'}>
+                            {hover && menus.getMenu(COMMENT_TITLE).children.map((node, index) => node instanceof ActionMenuNode &&
+                                <CommentsInlineAction key={index} {...{ node, commands, commentThread, getInput, clearInput, commentUniqueId }} />)}
+                        </div>
                     </div>
                 </div>
+                <CommentBody value={comment.body.value} isVisible={comment.mode === CommentMode.Preview}/>
+                <CommentEditContainer isVisible={comment.mode === CommentMode.Editing}
+                                      contextKeyService={contextKeyService}
+                                      menus={menus}
+                                      comment={comment}
+                                      commentThread={commentThread}
+                                      commands={commands}/>
             </div>
+        </div>;
+    }
+}
+
+namespace CommentBody {
+    export interface Props  {
+        value: string
+        isVisible: boolean
+    }
+}
+
+export class CommentBody extends React.Component<CommentBody.Props> {
+    render(): React.ReactNode {
+        const { value, isVisible } = this.props;
+        if (!isVisible) {
+            return false;
+        }
+        return <div className={'comment-body monaco-mouse-cursor-text'}>
+            <div>
+                <p>{value}</p>
+            </div>
+        </div>;
+    }
+}
+
+namespace CommentEditContainer {
+    export interface Props  {
+        isVisible: boolean
+        contextKeyService: CommentsContextKeyService
+        menus: MenuModelRegistry,
+        comment: Comment;
+        commentThread: CommentThread;
+        commands: CommandRegistry;
+    }
+}
+
+export class CommentEditContainer extends React.Component<CommentEditContainer.Props> {
+    render(): React.ReactNode {
+        const { isVisible, menus, commands, commentThread, contextKeyService } = this.props;
+        const getInput: () => string = () => '';
+        const clearInput: () => void = () => {};
+        if (!isVisible) {
+            return false;
+        }
+        return <div className={'edit-container'}>
+            <div className={'edit-textarea'}></div>
+            <div className={'form-actions'}>
+                {menus.getMenu(COMMENT_TITLE).children.map((node, index) => node instanceof ActionMenuNode &&
+                    <CommentAction key={index} {...{ node, commands, commentThread, getInput, clearInput, contextKeyService}} />)}
+            </div>
+        </div>;
+    }
+}
+
+namespace CommentsInlineAction {
+    export interface Props  {
+        node: ActionMenuNode;
+        commentThread: CommentThread;
+        clearInput: () => void;
+        commentUniqueId: number;
+        commands: CommandRegistry;
+    }
+}
+
+export class CommentsInlineAction extends React.Component<CommentsInlineAction.Props> {
+    render(): React.ReactNode {
+        const { node, commands, commentThread, commentUniqueId, clearInput } = this.props;
+        return <div className='theia-comments-inline-action'>
+            <a className={node.icon}
+               title={node.label}
+               onClick={() => {
+                   commands.executeCommand(node.id, {
+                       thread: commentThread,
+                       commentUniqueId
+                   });
+                   clearInput();
+               }} />
         </div>;
     }
 }

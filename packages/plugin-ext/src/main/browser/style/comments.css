@@ -153,6 +153,11 @@
     padding-top: 4px;
 }
 
+.monaco-editor .review-widget .body .review-comment .comment-title {
+    display: flex;
+    width: 100%;
+}
+
 .theia-comments-input-message-container {
     display: flex;
     flex-direction: column;
@@ -254,4 +259,29 @@
 
 .monaco-editor .review-widget .body .comment-form .comments-text-button {
     float: right;
+}
+
+.theia-comments-inline-actions-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-left: auto;
+    min-height: 16px;
+}
+
+.theia-comments-inline-actions {
+    display: flex;
+    margin: 0 3px;
+}
+
+.theia-comments-inline-actions a {
+    color: var(--theia-icon-foreground);
+}
+
+.theia-comments-inline-action {
+    padding: 0px 3px;
+    font-size: var(--theia-ui-font-size1);
+    margin: 0 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
 }

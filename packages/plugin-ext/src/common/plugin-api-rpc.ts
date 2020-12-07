@@ -705,6 +705,17 @@ export interface CommentsCommandArg {
     text: string
 }
 
+export namespace CommentsContextCommandArg {
+    export function is(arg: Object | undefined): arg is CommentsContextCommandArg {
+        return !!arg && typeof arg === 'object' && 'commentControlHandle' in arg && 'commentThreadHandle' in arg && 'commentUniqueId' in arg;
+    }
+}
+export interface CommentsContextCommandArg {
+    commentControlHandle: number;
+    commentThreadHandle: number;
+    commentUniqueId: number
+}
+
 export interface DecorationsExt {
     registerDecorationProvider(provider: theia.DecorationProvider): theia.Disposable
     $provideDecoration(id: number, uri: string): Promise<DecorationData | undefined>
