@@ -43,7 +43,7 @@ import { Navigatable } from '@theia/core/lib/browser/navigatable';
 import { ContextKeyService } from '@theia/core/lib/browser/context-key-service';
 import { TIMELINE_ITEM_CONTEXT_MENU } from '@theia/timeline/lib/browser/timeline-tree-widget';
 import { TimelineItem } from '@theia/timeline/lib/common/timeline-model';
-import { COMMENT_THREAD_CONTEXT, COMMENT_TITLE } from '../comments/comment-thread-widget';
+import { COMMENT_CONTEXT, COMMENT_THREAD_CONTEXT, COMMENT_TITLE } from '../comments/comment-thread-widget';
 
 type CodeEditorWidget = EditorWidget | WebviewWidget;
 @injectable()
@@ -195,10 +195,10 @@ export class MenusContributionPointHandler {
                 }
             } else if (location === 'comments/comment/context') {
                 for (const menu of allMenus[location]) {
-                    toDispose.push(this.registerMenuAction(COMMENT_TITLE, menu,
+                    toDispose.push(this.registerMenuAction(COMMENT_CONTEXT, menu,
                         command => ({
                             execute: (...args) => this.commands.executeCommand(command, ...this.toCommentArgs(...args)),
-                            isEnabled: (...args) => this.commands.isEnabled(command, ...this.toCommentArgs(...args)),
+                            isEnabled: () => true,
                             isVisible: (...args) => this.commands.isVisible(command, ...this.toCommentArgs(...args))
                         })
                     ));
@@ -365,6 +365,14 @@ export class MenusContributionPointHandler {
     protected toCommentArgs(...args: any[]): any[] {
         const arg = args[0];
         if ('text' in arg) {
+            if ('commentUniqueId' in arg) {
+                return [{
+                    commentControlHandle: arg.thread.controllerHandle,
+                    commentThreadHandle: arg.thread.commentThreadHandle,
+                    text: arg.text,
+                    commentUniqueId: arg.commentUniqueId
+                }];
+            }
             return [{
                 commentControlHandle: arg.thread.controllerHandle,
                 commentThreadHandle: arg.thread.commentThreadHandle,

@@ -704,7 +704,7 @@ export interface TimelineCommandArg {
 
 export namespace CommentsCommandArg {
     export function is(arg: Object | undefined): arg is CommentsCommandArg {
-        return !!arg && typeof arg === 'object' && 'commentControlHandle' in arg && 'commentThreadHandle' in arg && 'text' in arg;
+        return !!arg && typeof arg === 'object' && 'commentControlHandle' in arg && 'commentThreadHandle' in arg && 'text' in arg && !('commentUniqueId' in arg);
     }
 }
 export interface CommentsCommandArg {
@@ -715,13 +715,25 @@ export interface CommentsCommandArg {
 
 export namespace CommentsContextCommandArg {
     export function is(arg: Object | undefined): arg is CommentsContextCommandArg {
-        return !!arg && typeof arg === 'object' && 'commentControlHandle' in arg && 'commentThreadHandle' in arg && 'commentUniqueId' in arg;
+        return !!arg && typeof arg === 'object' && 'commentControlHandle' in arg && 'commentThreadHandle' in arg && 'commentUniqueId' in arg && !('text' in arg);
     }
 }
 export interface CommentsContextCommandArg {
     commentControlHandle: number;
     commentThreadHandle: number;
     commentUniqueId: number
+}
+
+export namespace CommentsEditCommandArg {
+    export function is(arg: Object | undefined): arg is CommentsEditCommandArg {
+        return !!arg && typeof arg === 'object' && 'commentControlHandle' in arg && 'commentThreadHandle' in arg && 'commentUniqueId' in arg && 'text' in arg;
+    }
+}
+export interface CommentsEditCommandArg {
+    commentControlHandle: number;
+    commentThreadHandle: number;
+    commentUniqueId: number
+    text: string
 }
 
 export interface DecorationsExt {

@@ -32,7 +32,7 @@ import { Disposable, DisposableCollection } from '@theia/core/lib/common/disposa
 import { fromMarkdown, fromRange, pathOrURIToURI, toRange } from './type-converters';
 import { CommentThreadCollapsibleState } from './types-impl';
 import {
-    CommentsCommandArg, CommentsContextCommandArg,
+    CommentsCommandArg, CommentsContextCommandArg, CommentsEditCommandArg,
     CommentsExt,
     CommentsMain,
     CommentThreadChanges,
@@ -92,6 +92,27 @@ export class CommentsExtImpl implements CommentsExt {
                         return arg;
                     }
 
+                    return comment;
+                } else if (CommentsEditCommandArg.is(arg)) {
+                    const commentController = this._commentControllers.get(arg.commentControlHandle);
+
+                    if (!commentController) {
+                        return arg;
+                    }
+
+                    const commentThread = commentController.getCommentThread(arg.commentThreadHandle);
+
+                    if (!commentThread) {
+                        return arg;
+                    }
+
+                    const comment = commentThread.getCommentByUniqueId(arg.commentUniqueId);
+
+                    if (!comment) {
+                        return arg;
+                    }
+
+                    comment.body = arg.text;
                     return comment;
                 }
 

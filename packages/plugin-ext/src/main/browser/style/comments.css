@@ -169,6 +169,7 @@
     line-height: var(--theia-content-line-height);
     background: var(--theia-editor-background);
     resize: none;
+    height: 90px;
     box-sizing: border-box;
     min-height: 32px;
     padding: 4px;
@@ -247,6 +248,10 @@
 .monaco-editor .review-widget .body .edit-container .form-actions {
     display: flex;
     justify-content: flex-end;
+}
+
+.monaco-editor .review-widget .body .edit-textarea {
+    margin: 5px 0 10px 0;
 }
 
 .monaco-editor .review-widget .body .comment-form .comments-text-button,
