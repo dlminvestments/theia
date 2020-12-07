@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2018 TypeFox and others.
+ * Copyright (C) 2018 Red Hat, Inc. and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,31 +14,21 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import * as React from 'react';
-import { ConsoleItem } from './console-session';
-import { Severity } from '@theia/core/lib/common/severity';
-import Anser = require('anser');
+import { PluginDeployerResolverContext } from '../../../common/plugin-protocol';
+import { injectable } from 'inversify';
+import * as path from 'path';
+import { LocalPluginDeployerResolver } from './local-plugin-deployer-resolver';
 
-export class AnsiConsoleItem implements ConsoleItem {
+@injectable()
+export class LocalFilePluginDeployerResolver extends LocalPluginDeployerResolver {
+    static LOCAL_FILE = 'local-file';
 
-    protected readonly htmlContent: string;
-
-    constructor(
-        public readonly content: string,
-        public readonly severity?: Severity
-    ) {
-        this.htmlContent = new Anser().ansiToHtml(this.content, {
-            use_classes: true,
-            remove_empty: true
-        });
+    protected get supportedScheme(): string {
+        return LocalFilePluginDeployerResolver.LOCAL_FILE;
     }
 
-    get visible(): boolean {
-        return !!this.htmlContent;
+    async resolveFromLocalPath(pluginResolverContext: PluginDeployerResolverContext, localPath: string): Promise<void> {
+        const fileName = path.basename(localPath);
+        pluginResolverContext.addPlugin(fileName, localPath);
     }
-
-    render(): React.ReactNode {
-        return <div className='theia-console-ansi-console-item' dangerouslySetInnerHTML={{ __html: this.htmlContent }} />;
-    }
-
 }

@@ -90,6 +90,8 @@ import type {
     TimelineProviderDescriptor
 } from '@theia/timeline/lib/common/timeline-model';
 import { SerializableEnvironmentVariableCollection } from '@theia/terminal/lib/common/base-terminal-protocol';
+import { ThemeType } from '@theia/core/lib/browser/theming';
+import { Disposable } from '@theia/core/lib/common/disposable';
 
 export interface PreferenceData {
     [scope: number]: any;
@@ -563,6 +565,12 @@ export interface TimelineMain {
     $registerTimelineProvider(provider: TimelineProviderDescriptor): Promise<void>;
     $fireTimelineChanged(e: TimelineChangeEvent): Promise<void>;
     $unregisterTimelineProvider(source: string): Promise<void>;
+}
+
+export interface ThemingExt {
+    $onColorThemeChange(type: ThemeType): void;
+}
+export interface ThemingMain extends Disposable {
 }
 
 export interface DialogsMain {
@@ -1229,6 +1237,9 @@ export interface TaskDto {
     label: string;
     source?: string;
     scope: string | number;
+    // Provide a more specific type when necessary (see ProblemMatcherContribution)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    problemMatcher?: any;
     detail?: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
@@ -1549,6 +1560,7 @@ export const PLUGIN_RPC_CONTEXT = {
     CLIPBOARD_MAIN: <ProxyIdentifier<ClipboardMain>>createProxyIdentifier<ClipboardMain>('ClipboardMain'),
     LABEL_SERVICE_MAIN: <ProxyIdentifier<LabelServiceMain>>createProxyIdentifier<LabelServiceMain>('LabelServiceMain'),
     TIMELINE_MAIN: <ProxyIdentifier<TimelineMain>>createProxyIdentifier<TimelineMain>('TimelineMain'),
+    THEMING_MAIN: <ProxyIdentifier<ThemingMain>>createProxyIdentifier<ThemingMain>('ThemingMain'),
     COMMENTS_MAIN: <ProxyIdentifier<CommentsMain>>createProxyIdentifier<CommentsMain>('CommentsMain')
 };
 
@@ -1579,8 +1591,8 @@ export const MAIN_RPC_CONTEXT = {
     DECORATIONS_EXT: createProxyIdentifier<DecorationsExt>('DecorationsExt'),
     LABEL_SERVICE_EXT: createProxyIdentifier<LabelServiceExt>('LabelServiceExt'),
     TIMELINE_EXT: createProxyIdentifier<TimelineExt>('TimeLineExt'),
-    COMMENTS_EXT: createProxyIdentifier<CommentsExt>('CommentsExt')
-};
+    THEMING_EXT: createProxyIdentifier<ThemingExt>('ThemingExt'),
+    COMMENTS_EXT: createProxyIdentifier<CommentsExt>('CommentsExt')};
 
 export interface TasksExt {
     $provideTasks(handle: number, token?: CancellationToken): Promise<TaskDto[] | undefined>;

@@ -39,14 +39,18 @@ function commandArgs(arg: string): string[] {
     return restIndex !== -1 ? process.argv.slice(restIndex + 1) : [];
 }
 
-function rebuildCommand(command: string, target: ApplicationProps.Target): yargs.CommandModule {
+function rebuildCommand(command: string, target: ApplicationProps.Target): yargs.CommandModule<unknown, { modules: string[] }> {
     return {
         command,
         describe: 'rebuild native node modules for the ' + target,
-        handler: () => {
-            const { modules } = yargs.array('modules').argv;
+        builder: {
+            'modules': {
+                array: true,
+            },
+        },
+        handler: args => {
             try {
-                rebuild(target, modules);
+                rebuild(target, args.modules);
             } catch (err) {
                 console.error(err);
                 process.exit(1);
@@ -57,7 +61,7 @@ function rebuildCommand(command: string, target: ApplicationProps.Target): yargs
 
 (function (): void {
     const projectPath = process.cwd();
-    const appTarget: ApplicationProps.Target = yargs.argv['app-target'];
+    const appTarget = yargs.argv['app-target'] as ApplicationProps.Target;
     const manager = new ApplicationPackageManager({ projectPath, appTarget });
     const target = manager.pck.target;
 
@@ -123,7 +127,7 @@ function rebuildCommand(command: string, target: ApplicationProps.Target): yargs
         .command(rebuildCommand('rebuild', target))
         .command(rebuildCommand('rebuild:browser', 'browser'))
         .command(rebuildCommand('rebuild:electron', 'electron'))
-        .command({
+        .command<{ suppress: boolean }>({
             command: 'check:hoisted',
             describe: 'check that all dependencies are hoisted',
             builder: {
@@ -143,13 +147,19 @@ function rebuildCommand(command: string, target: ApplicationProps.Target): yargs
                 }
             }
         })
-        .command({
+        .command<{ packed: boolean }>({
             command: 'download:plugins',
             describe: 'Download defined external plugins.',
             builder: {
                 'packed': {
                     alias: 'p',
                     describe: 'Controls whether to pack or unpack plugins',
+                    boolean: true,
+                    default: false,
+                },
+                'ignore-errors': {
+                    alias: 'i',
+                    describe: 'Ignore errors while downloading plugins',
                     boolean: true,
                     default: false,
                 }
@@ -162,7 +172,16 @@ function rebuildCommand(command: string, target: ApplicationProps.Target): yargs
                     process.exit(1);
                 }
             },
-        }).command({
+        }).command<{
+            testInspect: boolean,
+            testExtension: string[],
+            testFile: string[],
+            testIgnore: string[],
+            testRecursive: boolean,
+            testSort: boolean,
+            testSpec: string[],
+            testCoverage: boolean
+        }>({
             command: 'test',
             builder: {
                 'test-inspect': {
@@ -206,16 +225,7 @@ function rebuildCommand(command: string, target: ApplicationProps.Target): yargs
                     default: false
                 }
             },
-            handler: async ({ testInspect, testExtension, testFile, testIgnore, testRecursive, testSort, testSpec, testCoverage }: {
-                testInspect: boolean,
-                testExtension: string[],
-                testFile: string[],
-                testIgnore: string[],
-                testRecursive: boolean,
-                testSort: boolean,
-                testSpec: string[],
-                testCoverage: boolean
-            }) => {
+            handler: async ({ testInspect, testExtension, testFile, testIgnore, testRecursive, testSort, testSpec, testCoverage }) => {
                 try {
                     if (!process.env.THEIA_CONFIG_DIR) {
                         process.env.THEIA_CONFIG_DIR = temp.track().mkdirSync('theia-test-config-dir');

@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017 Ericsson and others.
+ * Copyright (C) 2018 Red Hat, Inc. and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,13 +13,25 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
+
+import { PluginDeployerResolverContext } from '../../../common/plugin-protocol';
 import { injectable } from 'inversify';
-import { Event } from '../../../common/event';
-import { WindowService } from '../window-service';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { LocalPluginDeployerResolver } from './local-plugin-deployer-resolver';
 
 @injectable()
-export class MockWindowService implements WindowService {
-    openNewWindow(): undefined { return undefined; }
-    canUnload(): boolean { return true; }
-    get onUnload(): Event<void> { return Event.None; }
+export class LocalDirectoryPluginDeployerResolver extends LocalPluginDeployerResolver {
+    static LOCAL_DIR = 'local-dir';
+
+    protected get supportedScheme(): string {
+        return LocalDirectoryPluginDeployerResolver.LOCAL_DIR;
+    }
+
+    protected async resolveFromLocalPath(pluginResolverContext: PluginDeployerResolverContext, localPath: string): Promise<void> {
+        const files = await fs.readdir(localPath);
+        files.forEach(file =>
+            pluginResolverContext.addPlugin(file, path.resolve(localPath, file))
+        );
+    }
 }

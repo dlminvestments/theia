@@ -52,6 +52,7 @@ import { MainFileSystemEventService } from './main-file-system-event-service';
 import { LabelServiceMainImpl } from './label-service-main';
 import { TimelineMainImpl } from './timeline-main';
 import { AuthenticationMainImpl } from './authentication-main';
+import { ThemingMainImpl } from './theming-main';
 import { CommentsMainImp } from './comments/comments-main';
 
 export function setUpPluginApi(rpc: RPCProtocol, container: interfaces.Container): void {
@@ -160,6 +161,9 @@ export function setUpPluginApi(rpc: RPCProtocol, container: interfaces.Container
 
     const timelineMain = new TimelineMainImpl(rpc, container);
     rpc.set(PLUGIN_RPC_CONTEXT.TIMELINE_MAIN, timelineMain);
+
+    const themingMain = new ThemingMainImpl(rpc);
+    rpc.set(PLUGIN_RPC_CONTEXT.THEMING_MAIN, themingMain);
 
     const commentsMain = new CommentsMainImp(rpc, container);
     rpc.set(PLUGIN_RPC_CONTEXT.COMMENTS_MAIN, commentsMain);

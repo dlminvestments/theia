@@ -128,7 +128,8 @@ import {
     SemanticTokensBuilder,
     SemanticTokens,
     SemanticTokensEdits,
-    SemanticTokensEdit
+    SemanticTokensEdit,
+    ColorThemeKind
 } from './types-impl';
 import { AuthenticationExtImpl } from './authentication-ext';
 import { SymbolKind } from '../common/plugin-api-rpc-model';
@@ -162,6 +163,7 @@ import { WebviewsExtImpl } from './webviews';
 import { ExtHostFileSystemEventService } from './file-system-event-service-ext-impl';
 import { LabelServiceExtImpl } from '../plugin/label-service';
 import { TimelineExtImpl } from './timeline';
+import { ThemingExtImpl } from './theming';
 import { CommentsExtImpl } from './comments';
 
 export function createAPIFactory(
@@ -198,6 +200,7 @@ export function createAPIFactory(
     const decorationsExt = rpc.set(MAIN_RPC_CONTEXT.DECORATIONS_EXT, new DecorationsExtImpl(rpc));
     const labelServiceExt = rpc.set(MAIN_RPC_CONTEXT.LABEL_SERVICE_EXT, new LabelServiceExtImpl(rpc));
     const timelineExt = rpc.set(MAIN_RPC_CONTEXT.TIMELINE_EXT, new TimelineExtImpl(rpc, commandRegistry));
+    const themingExt = rpc.set(MAIN_RPC_CONTEXT.THEMING_EXT, new ThemingExtImpl(rpc));
     const commentsExt = rpc.set(MAIN_RPC_CONTEXT.COMMENTS_EXT, new CommentsExtImpl(rpc, commandRegistry, documents));
     rpc.set(MAIN_RPC_CONTEXT.DEBUG_EXT, debugExt);
 
@@ -428,6 +431,12 @@ export function createAPIFactory(
             },
             createInputBox(): theia.InputBox {
                 return quickOpenExt.createInputBox(plugin);
+            },
+            get activeColorTheme(): theia.ColorTheme {
+                return themingExt.activeColorTheme;
+            },
+            onDidChangeActiveColorTheme(listener, thisArg?, disposables?) {
+                return themingExt.onDidChangeActiveColorTheme(listener, thisArg, disposables);
             }
         };
 
@@ -920,7 +929,8 @@ export function createAPIFactory(
             SemanticTokensBuilder,
             SemanticTokens,
             SemanticTokensEdits,
-            SemanticTokensEdit
+            SemanticTokensEdit,
+            ColorThemeKind
         };
     };
 }

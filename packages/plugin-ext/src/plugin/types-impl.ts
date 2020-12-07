@@ -96,6 +96,19 @@ export enum ViewColumn {
 }
 
 /**
+ * Represents a color theme kind.
+ */
+export enum ColorThemeKind {
+    Light = 1,
+    Dark = 2,
+    HighContrast = 3
+}
+
+export class ColorTheme implements theia.ColorTheme {
+    constructor(public readonly kind: ColorThemeKind) { }
+}
+
+/**
  * Represents sources that can cause `window.onDidChangeEditorSelection`
  */
 export enum TextEditorSelectionChangeKind {
@@ -726,7 +739,7 @@ export enum CompletionItemKind {
     Enum = 12,
     Keyword = 13,
     Snippet = 14,
-    Color = 15, // eslint-disable-line no-shadow
+    Color = 15, // eslint-disable-line @typescript-eslint/no-shadow
     File = 16,
     Reference = 17,
     Folder = 18,
@@ -2288,9 +2301,9 @@ export class SemanticTokensBuilder {
             let prevLine = 0;
             let prevChar = 0;
             for (let i = 0; i < tokenCount; i++) {
-                // eslint-disable-next-line no-shadow
+                // eslint-disable-next-line @typescript-eslint/no-shadow
                 let line = this._data[5 * i];
-                // eslint-disable-next-line no-shadow
+                // eslint-disable-next-line @typescript-eslint/no-shadow
                 let char = this._data[5 * i + 1];
 
                 if (line === 0) {
