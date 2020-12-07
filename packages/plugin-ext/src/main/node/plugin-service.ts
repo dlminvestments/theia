@@ -15,8 +15,6 @@
  ********************************************************************************/
 
 import * as path from 'path';
-import connect = require('connect');
-import serveStatic = require('serve-static');
 const vhost = require('vhost');
 import * as express from 'express';
 import { BackendApplicationContribution } from '@theia/core/lib/node/backend-application';
@@ -35,8 +33,8 @@ export class PluginApiContribution implements BackendApplicationContribution {
             res.sendFile(pluginPath + filePath);
         });
 
-        const webviewApp = connect();
-        webviewApp.use('/webview', serveStatic(path.join(__dirname, '../../../src/main/browser/webview/pre')));
+        const webviewApp = express();
+        webviewApp.use('/webview', express.static(path.join(__dirname, '../../../src/main/browser/webview/pre')));
         const webviewExternalEndpoint = this.webviewExternalEndpoint();
         console.log(`Configuring to accept webviews on '${webviewExternalEndpoint}' hostname.`);
         app.use(vhost(new RegExp(webviewExternalEndpoint, 'i'), webviewApp));
