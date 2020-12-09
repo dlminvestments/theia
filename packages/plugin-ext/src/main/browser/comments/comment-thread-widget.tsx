@@ -47,7 +47,7 @@ export class CommentThreadWidget extends BaseWidget {
     protected commentGlyphWidget: CommentGlyphWidget;
 
     private _isExpanded?: boolean;
-    private inputValue: string = '';
+
     private readonly menu: CompositeMenuNode;
 
     public getGlyphPosition(): number {
@@ -100,80 +100,6 @@ export class CommentThreadWidget extends BaseWidget {
         });
         // this._fillContainer(this.zone.containerNode);
         // this.createThreadLabel();
-    }
-
-    protected render(): void {
-        const headHeight = Math.ceil(this.zoneWidget.editor.getOption(monaco.editor.EditorOption.lineHeight) * 1.2);
-        const hasExistingComments = this._commentThread.comments && this._commentThread.comments.length > 0;
-        const getInput: () => string = () => this.inputValue;
-        const clearInput: () => void = () => {
-            const input = this.inputRef.current;
-            if (input) {
-                this.inputValue = '';
-                input.value = this.inputValue;
-                this.contextKeyService.commentIsEmpty.set(true);
-            }
-        };
-        const onInput: (event: React.FormEvent) => void = (event: React.FormEvent) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const value = (event.target as any).value;
-            if (this.inputValue.length === 0 || value.length === 0) {
-                this.contextKeyService.commentIsEmpty.set(value.length === 0);
-            }
-            this.inputValue = value;
-        };
-        ReactDOM.render(<div className={'review-widget'}>
-            <div className={'head'} style={{ height: headHeight, lineHeight: `${headHeight}px`}}>
-                <div className={'review-title'}>
-                    <span className={'filename'}>{this.getThreadLabel()}</span>
-                </div>
-                <div className={'review-actions'}>
-                    <div className={'monaco-action-bar animated'}>
-                        <ul className={'actions-container'} role={'toolbar'}>
-                            <li className={'action-item'} role={'presentation'}>
-                                <a className={'action-label codicon expand-review-action codicon-chevron-up'}
-                                   role={'button'}
-                                   tabIndex={0}
-                                   title={'Collapse'}
-                                   onClick={() => this.collapse()}
-                                />
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div className={'body'}>
-                <div className={'comments-container'} role={'presentation'} tabIndex={0}>
-                    {this.commentThread.comments?.map((comment, index) => <ReviewComment
-                        key={index}
-                        contextKeyService={this.contextKeyService}
-                        menus={this.menus}
-                        comment={comment}
-                        commands={this.commands}
-                        commentThread={this._commentThread}
-                        getInput={getInput}
-                        clearInput={clearInput}
-                        inputRef={this.inputRef}
-                    />)}
-                </div>
-                <div className={'comment-form'}>
-                    <div className={'theia-comments-input-message-container'}>
-                        <textarea className={'theia-comments-input-message theia-input'}
-                                  placeholder={hasExistingComments ? 'Reply...' : 'Type a new comment'}
-                                  onInput={onInput}
-                                  ref={this.inputRef}>
-                        </textarea>
-                    </div>
-                    <CommentActions menu={this.menu}
-                                    contextKeyService={this.contextKeyService}
-                                    commands={this.commands}
-                                    commentThread={this._commentThread}
-                                    getInput={getInput}
-                                    clearInput={clearInput}
-                    />
-                </div>
-            </div>
-        </div>, this.zoneWidget.containerNode);
     }
 
     public collapse(): Promise<void> {
@@ -330,6 +256,139 @@ export class CommentThreadWidget extends BaseWidget {
             currentInput.setSelectionRange(currentInput.value.length, currentInput.value.length);
         }
     }
+
+    protected render(): void {
+        const headHeight = Math.ceil(this.zoneWidget.editor.getOption(monaco.editor.EditorOption.lineHeight) * 1.2);
+        ReactDOM.render(<div className={'review-widget'}>
+            <div className={'head'} style={{ height: headHeight, lineHeight: `${headHeight}px`}}>
+                <div className={'review-title'}>
+                    <span className={'filename'}>{this.getThreadLabel()}</span>
+                </div>
+                <div className={'review-actions'}>
+                    <div className={'monaco-action-bar animated'}>
+                        <ul className={'actions-container'} role={'toolbar'}>
+                            <li className={'action-item'} role={'presentation'}>
+                                <a className={'action-label codicon expand-review-action codicon-chevron-up'}
+                                   role={'button'}
+                                   tabIndex={0}
+                                   title={'Collapse'}
+                                   onClick={() => this.collapse()}
+                                />
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div className={'body'}>
+                <div className={'comments-container'} role={'presentation'} tabIndex={0}>
+                    {this.commentThread.comments?.map((comment, index) => <ReviewComment
+                        key={index}
+                        contextKeyService={this.contextKeyService}
+                        menus={this.menus}
+                        comment={comment}
+                        commands={this.commands}
+                        commentThread={this._commentThread}
+                        inputRef={this.inputRef}
+                    />)}
+                </div>
+                <CommentForm contextKeyService={this.contextKeyService}
+                             commands={this.commands}
+                             commentThread={this.commentThread}
+                             menus={this.menus}
+                             inputRef={this.inputRef}
+                />
+            </div>
+        </div>, this.zoneWidget.containerNode);
+    }
+}
+
+namespace CommentForm {
+    export interface Props  {
+        menus: MenuModelRegistry,
+        commentThread: CommentThread;
+        commands: CommandRegistry;
+        contextKeyService: CommentsContextKeyService;
+        inputRef: RefObject<HTMLTextAreaElement>;
+    }
+
+    export interface State {
+        expanded: boolean
+    }
+}
+
+export class CommentForm<P extends CommentForm.Props = CommentForm.Props> extends React.Component<P, CommentForm.State> {
+    private readonly menu: CompositeMenuNode;
+    private inputValue: string = '';
+    private readonly getInput = () => this.inputValue;
+    private readonly clearInput: () => void = () => {
+        const input = this.props.inputRef.current;
+        if (input) {
+            this.inputValue = '';
+            input.value = this.inputValue;
+            this.props.contextKeyService.commentIsEmpty.set(true);
+        }
+    };
+    protected expand = () => {
+        this.setState({ expanded: true });
+    };
+    protected collapse = () => this.setState({ expanded: false });
+
+    private readonly onInput: (event: React.FormEvent) => void = (event: React.FormEvent) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const value = (event.target as any).value;
+        if (this.inputValue.length === 0 || value.length === 0) {
+            this.props.contextKeyService.commentIsEmpty.set(value.length === 0);
+        }
+        this.inputValue = value;
+    };
+
+    constructor(props: P) {
+        super(props);
+        this.state = {
+            expanded: false
+        };
+
+        const setState = this.setState.bind(this);
+        this.setState = newState => {
+            setState(newState);
+        };
+
+        this.menu = this.props.menus.getMenu(COMMENT_THREAD_CONTEXT);
+        this.menu.children.map(node => node instanceof ActionMenuNode && node.action.when).forEach(exp => {
+            if (typeof exp === 'string') {
+                this.props.contextKeyService.setExpression(exp);
+            }
+        });
+    }
+
+    render(): React.ReactNode {
+        const { commands, commentThread, contextKeyService, inputRef } = this.props;
+        const hasExistingComments = commentThread.comments && commentThread.comments.length > 0;
+        return <div className={'comment-form' + (this.state.expanded ? ' expand' : '')}>
+            <div className={'theia-comments-input-message-container'}>
+                        <textarea className={'theia-comments-input-message theia-input'}
+                                  placeholder={hasExistingComments ? 'Reply...' : 'Type a new comment'}
+                                  onInput={this.onInput}
+                                  ref={inputRef}>
+                        </textarea>
+            </div>
+            <CommentActions menu={this.menu}
+                            contextKeyService={contextKeyService}
+                            commands={commands}
+                            commentThread={commentThread}
+                            getInput={this.getInput}
+                            clearInput={this.clearInput}
+            />
+            <button className={'review-thread-reply-button'} title={'Reply...'} onClick={this.expand}>Reply...</button>
+        </div>;
+    }
+
+    // private expandReplyArea(): void {
+    //     if (!dom.hasClass(this._commentForm, 'expand')) {
+    //         dom.addClass(this._commentForm, 'expand');
+    //         this._commentEditor.focus();
+    //     }
+    // }
 }
 
 namespace ReviewComment {
@@ -338,8 +397,6 @@ namespace ReviewComment {
         comment: Comment;
         commentThread: CommentThread;
         contextKeyService: CommentsContextKeyService;
-        getInput: () => string;
-        clearInput: () => void;
         commands: CommandRegistry;
         inputRef: RefObject<HTMLTextAreaElement>;
     }
@@ -376,7 +433,7 @@ export class ReviewComment<P extends ReviewComment.Props = ReviewComment.Props> 
     protected hideHover = () => this.setState({ hover: false });
 
     render(): React.ReactNode {
-        const { comment, contextKeyService, menus, commands, commentThread, getInput, clearInput, inputRef } = this.props;
+        const { comment, contextKeyService, menus, commands, commentThread, inputRef } = this.props;
         const commentUniqueId = comment.uniqueIdInThread;
         const { hover } = this.state;
         return <div className={'review-comment'}
@@ -395,7 +452,7 @@ export class ReviewComment<P extends ReviewComment.Props = ReviewComment.Props> 
                     <div className={'theia-comments-inline-actions-container'}>
                         <div className={'theia-comments-inline-actions'} role={'toolbar'}>
                             {hover && menus.getMenu(COMMENT_TITLE).children.map((node, index) => node instanceof ActionMenuNode &&
-                                <CommentsInlineAction key={index} {...{ node, commands, commentThread, getInput, clearInput, commentUniqueId }} />)}
+                                <CommentsInlineAction key={index} {...{ node, commands, commentThread, commentUniqueId }} />)}
                         </div>
                     </div>
                 </div>
@@ -479,7 +536,6 @@ namespace CommentsInlineAction {
     export interface Props  {
         node: ActionMenuNode;
         commentThread: CommentThread;
-        clearInput: () => void;
         commentUniqueId: number;
         commands: CommandRegistry;
     }
@@ -487,7 +543,7 @@ namespace CommentsInlineAction {
 
 export class CommentsInlineAction extends React.Component<CommentsInlineAction.Props> {
     render(): React.ReactNode {
-        const { node, commands, commentThread, commentUniqueId, clearInput } = this.props;
+        const { node, commands, commentThread, commentUniqueId } = this.props;
         return <div className='theia-comments-inline-action'>
             <a className={node.icon}
                title={node.label}
@@ -496,7 +552,6 @@ export class CommentsInlineAction extends React.Component<CommentsInlineAction.P
                        thread: commentThread,
                        commentUniqueId
                    });
-                   clearInput();
                }} />
         </div>;
     }
