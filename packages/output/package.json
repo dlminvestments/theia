@@ -7,7 +7,7 @@
     "@theia/editor": "^1.8.0",
     "@theia/monaco": "^1.8.0",
     "@types/p-queue": "^3.2.1",
-    "p-queue": "^2.4.2"
+    "p-queue": "^6.6.2"
   },
   "publishConfig": {
     "access": "public"
