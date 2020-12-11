@@ -38,7 +38,7 @@
     "@types/webpack": "^4.41.2",
     "babel-loader": "^8.0.6",
     "circular-dependency-plugin": "^5.0.0",
-    "copy-webpack-plugin": "^4.5.0",
+    "copy-webpack-plugin": "^6.4.0",
     "css-loader": "^0.28.1",
     "electron-rebuild": "^1.8.6",
     "file-loader": "^6.2.0",
