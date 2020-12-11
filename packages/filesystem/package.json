@@ -12,8 +12,7 @@
     "http-status-codes": "^2.1.4",
     "minimatch": "^3.0.4",
     "rimraf": "^3.0.2",
-    "tar-fs": "^1.16.2",
-    "trash": "^7.0.0",
+
     "uuid": "^8.0.0",
     "vscode-languageserver-textdocument": "^1.0.1"
   },
